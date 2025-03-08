@@ -1,0 +1,337 @@
+{% extends "base.html" %}
+
+{% block title %}数据导入 - {{ super() }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.upload-area {
+    border: 2px dashed #0d6efd;
+    border-radius: 10px;
+    padding: 2rem;
+    text-align: center;
+    background-color: #f8f9fa;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+.upload-area:hover {
+    background-color: #e9ecef;
+}
+.upload-area.dragover {
+    background-color: #e3f2fd;
+    border-color: #0d6efd;
+}
+.preview-table {
+    max-height: 400px;
+    overflow-y: auto;
+}
+.file-info {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+.progress {
+    height: 0.5rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- 页面标题 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fas fa-file-upload"></i> 数据导入</h2>
+                <a href="{{ url_for('admin.index') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> 返回管理后台
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 上传区域 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form id="uploadForm" method="POST" enctype="multipart/form-data" action="{{ url_for('admin.upload_file') }}">
+                        <div class="upload-area" id="dropZone">
+                            <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+                            <h4>拖拽文件到这里或点击选择文件</h4>
+                            <p class="text-muted mb-3">支持的文件格式：CSV, Excel (xlsx, xls)</p>
+                            <input type="file" id="fileInput" name="file" class="d-none" accept=".csv,.xlsx,.xls">
+                            <button type="button" class="btn btn-primary btn-lg" onclick="document.getElementById('fileInput').click()">
+                                <i class="fas fa-folder-open"></i> 选择文件
+                            </button>
+                        </div>
+                        
+                        <!-- 文件信息 -->
+                        <div id="fileInfo" class="mt-3 d-none">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-file-alt text-primary me-2"></i>
+                                <span id="fileName">未选择文件</span>
+                                <button type="button" class="btn btn-link text-danger" onclick="removeFile()">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div class="progress mt-2">
+                                <div id="uploadProgress" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <small class="file-info">
+                                大小：<span id="fileSize">0 KB</span> | 
+                                类型：<span id="fileType">未知</span>
+                            </small>
+                        </div>
+
+                        <!-- 导入选项 -->
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="skipHeader" name="skip_header" checked>
+                                    <label class="form-check-label" for="skipHeader">
+                                        跳过首行（标题行）
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="cleanData" name="clean_data" checked>
+                                    <label class="form-check-label" for="cleanData">
+                                        自动清理数据（删除重复值和空值）
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 提交按钮 -->
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary" id="uploadButton" disabled>
+                                <i class="fas fa-upload"></i> 开始导入
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="previewFile()" id="previewButton" disabled>
+                                <i class="fas fa-eye"></i> 预览数据
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 数据预览 -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-table"></i> 数据预览
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="preview-table">
+                        <table class="table table-hover" id="previewTable">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>标题</th>
+                                    <th>房屋名称</th>
+                                    <th>地区</th>
+                                    <th>价格(元)</th>
+                                    <th>户型</th>
+                                    <th>面积(㎡)</th>
+                                    <th>朝向</th>
+                                    <th>装修情况</th>
+                                    <th>所在楼层</th>
+                                    <th>建筑类型</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="11" class="text-center">请先选择文件并点击预览</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 文件拖放处理
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const uploadButton = document.getElementById('uploadButton');
+const previewButton = document.getElementById('previewButton');
+const fileInfo = document.getElementById('fileInfo');
+const fileName = document.getElementById('fileName');
+const fileSize = document.getElementById('fileSize');
+const fileType = document.getElementById('fileType');
+const uploadProgress = document.getElementById('uploadProgress');
+
+// 拖放事件处理
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, preventDefaults, false);
+});
+
+function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+['dragenter', 'dragover'].forEach(eventName => {
+    dropZone.addEventListener(eventName, highlight, false);
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, unhighlight, false);
+});
+
+function highlight(e) {
+    dropZone.classList.add('dragover');
+}
+
+function unhighlight(e) {
+    dropZone.classList.remove('dragover');
+}
+
+// 处理文件拖放
+dropZone.addEventListener('drop', handleDrop, false);
+
+function handleDrop(e) {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    handleFiles(files);
+}
+
+// 处理文件选择
+fileInput.addEventListener('change', function() {
+    handleFiles(this.files);
+});
+
+function handleFiles(files) {
+    if (files.length > 0) {
+        const file = files[0];
+        if (isValidFileType(file)) {
+            showFileInfo(file);
+            uploadButton.disabled = false;
+            previewButton.disabled = false;
+        } else {
+            alert('请选择正确的文件格式（CSV, Excel）');
+            removeFile();
+        }
+    }
+}
+
+function isValidFileType(file) {
+    const validTypes = ['.csv', '.xlsx', '.xls'];
+    const fileName = file.name.toLowerCase();
+    return validTypes.some(type => fileName.endsWith(type));
+}
+
+function showFileInfo(file) {
+    fileInfo.classList.remove('d-none');
+    fileName.textContent = file.name;
+    fileSize.textContent = formatFileSize(file.size);
+    fileType.textContent = file.type || '文本文件';
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function removeFile() {
+    fileInput.value = '';
+    fileInfo.classList.add('d-none');
+    uploadButton.disabled = true;
+    previewButton.disabled = true;
+    uploadProgress.style.width = '0%';
+}
+
+// 文件上传处理
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    // 显示上传进度
+    uploadProgress.style.width = '0%';
+    uploadButton.disabled = true;
+    
+    $.ajax({
+        url: this.action,
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        xhr: function() {
+            const xhr = new XMLHttpRequest();
+            xhr.upload.addEventListener('progress', function(e) {
+                if (e.lengthComputable) {
+                    const percentComplete = (e.loaded / e.total) * 100;
+                    uploadProgress.style.width = percentComplete + '%';
+                }
+            }, false);
+            return xhr;
+        },
+        success: function(response) {
+            alert('数据导入成功！');
+            window.location.href = "{{ url_for('admin.index') }}";
+        },
+        error: function(xhr) {
+            alert('数据导入失败：' + xhr.responseText);
+            uploadButton.disabled = false;
+        }
+    });
+});
+
+// 数据预览
+function previewFile() {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('preview', 'true');
+
+    $.ajax({
+        url: "{{ url_for('admin.preview_file') }}",
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(response) {
+            const tbody = document.querySelector('#previewTable tbody');
+            tbody.innerHTML = '';
+            
+            response.data.forEach((row, index) => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${row.标题 || ''}</td>
+                        <td>${row.房屋名称 || ''}</td>
+                        <td>${row.地区 || ''}</td>
+                        <td>${row.价格 || ''}</td>
+                        <td>${row.户型 || ''}</td>
+                        <td>${row.面积 || ''}</td>
+                        <td>${row.朝向 || ''}</td>
+                        <td>${row.装修情况 || ''}</td>
+                        <td>${row.所在楼层 || ''}</td>
+                        <td>${row.建筑类型 || ''}</td>
+                    </tr>
+                `;
+            });
+        },
+        error: function(xhr) {
+            alert('预览失败：' + xhr.responseText);
+        }
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}首页 - {{ super() }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.feature-card {
+    transition: transform 0.3s;
+}
+.feature-card:hover {
+    transform: translateY(-5px);
+}
+.stats-card {
+    border-left: 4px solid #0d6efd;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="index-page">
+    <div class="container">
+        <div class="row g-4">
+            <!-- 统计卡片 -->
+            <div class="col-md-3">
+                <div class="card stats-card h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="stats-icon text-primary me-3">
+                                <i class="fas fa-home fa-2x"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0">总房源数</h6>
+                                <h2 class="mb-0" id="totalCount">-</h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="card stats-card h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="stats-icon text-success me-3">
+                                <i class="fas fa-chart-line fa-2x"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0">平均单价</h6>
+                                <h2 class="mb-0" id="avgPrice">-</h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="card stats-card h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="stats-icon text-warning me-3">
+                                <i class="fas fa-arrow-up fa-2x"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0">最高单价</h6>
+                                <h2 class="mb-0" id="maxPrice">-</h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="card stats-card h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="stats-icon text-danger me-3">
+                                <i class="fas fa-arrow-down fa-2x"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0">最低单价</h6>
+                                <h2 class="mb-0" id="minPrice">-</h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 功能卡片 -->
+            <div class="col-md-4">
+                <div class="card h-100 feature-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-search fa-3x text-primary mb-3"></i>
+                        <h5 class="card-title">房源查询</h5>
+                        <p class="card-text">查看详细的房源信息，包括价格、面积、位置等。</p>
+                        <a href="{{ url_for('main.house_list') }}" class="btn btn-primary">
+                            <i class="fas fa-arrow-right"></i> 开始查询
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card h-100 feature-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-chart-bar fa-3x text-primary mb-3"></i>
+                        <h5 class="card-title">数据分析</h5>
+                        <p class="card-text">查看房价趋势、区域分布等可视化分析。</p>
+                        <a href="{{ url_for('main.visualization') }}" class="btn btn-primary">
+                            <i class="fas fa-arrow-right"></i> 查看分析
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card h-100 feature-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-download fa-3x text-primary mb-3"></i>
+                        <h5 class="card-title">数据导出</h5>
+                        <p class="card-text">下载房价数据报告，支持Excel格式。</p>
+                        <a href="{{ url_for('main.download_report') }}" class="btn btn-primary">
+                            <i class="fas fa-arrow-right"></i> 下载报告
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // 获取统计数据
+    $.get("{{ url_for('main.get_summary_stats') }}", function(data) {
+        $('#totalCount').text(data.total_count.toLocaleString());
+        $('#avgPrice').text((data.price_stats.avg || 0).toLocaleString() + ' 元/平米');
+        $('#maxPrice').text((data.price_stats.max || 0).toLocaleString() + ' 元/平米');
+        $('#minPrice').text((data.price_stats.min || 0).toLocaleString() + ' 元/平米');
+    });
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block title %}管理后台 - {{ super() }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.admin-card {
+    transition: transform 0.3s;
+    border-left: 4px solid #0d6efd;
+}
+.admin-card:hover {
+    transform: translateY(-5px);
+}
+.stat-card {
+    border-radius: 10px;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+.stat-icon {
+    font-size: 2.5rem;
+    opacity: 0.7;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- 欢迎信息 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h3 class="card-title">
+                        <i class="fas fa-tachometer-alt"></i> 管理后台
+                    </h3>
+                    <p class="card-text">欢迎回来，{{ current_user.username }}！您可以在这里管理系统数据和用户。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 快速统计 -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card stat-card bg-primary text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">总用户数</h6>
+                            <h2 class="mb-0" id="totalUsers">-</h2>
+                        </div>
+                        <i class="fas fa-users stat-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stat-card bg-success text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">总房源数</h6>
+                            <h2 class="mb-0" id="totalHouses">-</h2>
+                        </div>
+                        <i class="fas fa-home stat-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stat-card bg-info text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">平均单价</h6>
+                            <h2 class="mb-0"><span id="avgPrice">-</span> 元/㎡</h2>
+                        </div>
+                        <i class="fas fa-chart-line stat-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stat-card bg-warning text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">最高单价</h6>
+                            <h2 class="mb-0"><span id="maxPrice">-</span> 元/㎡</h2>
+                        </div>
+                        <i class="fas fa-arrow-up stat-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stat-card bg-danger text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">最低单价</h6>
+                            <h2 class="mb-0"><span id="minPrice">-</span> 元/㎡</h2>
+                        </div>
+                        <i class="fas fa-arrow-down stat-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stat-card bg-secondary text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">更新时间</h6>
+                            <h2 class="mb-0" id="lastUpdate">-</h2>
+                        </div>
+                        <i class="fas fa-clock stat-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 管理功能区 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4 class="mb-4"><i class="fas fa-tools"></i> 管理功能</h4>
+        </div>
+        
+        <!-- 用户管理 -->
+        <div class="col-md-6 mb-4">
+            <div class="card admin-card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-users-cog"></i> 用户管理
+                    </h5>
+                    <p class="card-text">管理系统用户，包括添加、编辑、删除用户，以及修改用户权限等操作。</p>
+                    <a href="{{ url_for('admin.user_list') }}" class="btn btn-primary">
+                        <i class="fas fa-arrow-right"></i> 进入用户管理
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 数据导入 -->
+        <div class="col-md-6 mb-4">
+            <div class="card admin-card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-file-upload"></i> 数据导入
+                    </h5>
+                    <p class="card-text">上传并导入房价数据文件，支持CSV和Excel格式，系统会自动处理数据。</p>
+                    <a href="{{ url_for('admin.upload_file') }}" class="btn btn-primary">
+                        <i class="fas fa-arrow-right"></i> 导入数据
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 最近活动 -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-history"></i> 最近活动
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>时间</th>
+                                    <th>操作类型</th>
+                                    <th>详细信息</th>
+                                    <th>操作人</th>
+                                </tr>
+                            </thead>
+                            <tbody id="activityLog">
+                                <!-- 活动日志将通过JavaScript动态加载 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // 格式化数字的函数
+    function formatNumber(num) {
+        return new Intl.NumberFormat('zh-CN').format(num);
+    }
+
+    // 获取统计数据
+    console.log("开始获取统计数据...");
+    $.get("{{ url_for('admin.get_user_stats') }}")
+        .done(function(data) {
+            console.log("收到的统计数据：", data);
+            if (data) {
+                try {
+                    $('#totalUsers').text(formatNumber(data.total_users || 0));
+                    $('#totalHouses').text(formatNumber(data.total_houses || 0));
+                    $('#avgPrice').text(formatNumber(Math.round(data.avg_price || 0)));
+                    $('#maxPrice').text(formatNumber(Math.round(data.max_price || 0)));
+                    $('#minPrice').text(formatNumber(Math.round(data.min_price || 0)));
+                    $('#lastUpdate').text(data.last_update || '-');
+                } catch (e) {
+                    console.error("处理数据时出错：", e);
+                }
+            } else {
+                console.error("返回的数据为空");
+            }
+        })
+        .fail(function(jqXHR, textStatus, errorThrown) {
+            console.error("获取统计数据失败：", textStatus, errorThrown);
+            // 显示错误信息
+            $('.stat-card h2').text('加载失败');
+        });
+
+    // 获取最近活动
+    $.get("{{ url_for('admin.get_recent_activities') }}")
+        .done(function(data) {
+            console.log("收到的活动数据：", data);
+            const activityLog = $('#activityLog');
+            if (data.activities && data.activities.length > 0) {
+                data.activities.forEach(function(activity) {
+                    activityLog.append(`
+                        <tr>
+                            <td>${activity.time}</td>
+                            <td>${activity.type}</td>
+                            <td>${activity.details}</td>
+                            <td>${activity.user}</td>
+                        </tr>
+                    `);
+                });
+            } else {
+                activityLog.append('<tr><td colspan="4" class="text-center">暂无活动记录</td></tr>');
+            }
+        })
+        .fail(function(jqXHR, textStatus, errorThrown) {
+            console.error("获取活动数据失败：", textStatus, errorThrown);
+            $('#activityLog').append('<tr><td colspan="4" class="text-center text-danger">获取活动记录失败</td></tr>');
+        });
+});
+</script>
+{% endblock %} 

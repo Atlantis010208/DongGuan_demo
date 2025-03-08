@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block title %}登录 - {{ super() }}{% endblock %}
+
+{% block extra_css %}
+<style>
+/* 导航栏样式 */
+.navbar {
+    background: transparent !important;
+    position: absolute;
+    width: 100%;
+    z-index: 1000;
+    padding: 1rem 0;
+    margin-top: 1rem;
+}
+
+.navbar-brand {
+    color: #fff !important;
+    font-weight: 600;
+    font-size: 1.5rem;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+    padding: 0.5rem 1rem;
+}
+
+.navbar .nav-link {
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    transition: all 0.3s ease;
+    margin: 0 0.25rem;
+}
+
+.navbar .nav-link:hover {
+    color: #fff !important;
+    transform: translateY(-1px);
+}
+
+/* 页面主体样式 */
+body {
+    background: url('/static/images/backgrounds/login.jpg') no-repeat center center fixed;
+    background-size: cover;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+}
+
+.login-container {
+    max-width: 400px;
+    margin: 2rem auto;
+}
+
+.login-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    background-color: rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(10px);
+}
+
+.login-header {
+    text-align: center;
+    padding: 2rem 0;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 15px 15px 0 0;
+}
+
+.login-header h2 {
+    color: #fff;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.login-header p {
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 0;
+}
+
+.login-form {
+    padding: 2rem;
+}
+
+.form-floating {
+    margin-bottom: 1rem;
+}
+
+.form-control {
+    background-color: rgba(255, 255, 255, 0.8);
+}
+
+.form-control:focus {
+    background-color: rgba(255, 255, 255, 0.95);
+    border-color: #3498db;
+    box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+}
+
+.form-floating label {
+    color: #495057;
+}
+
+.btn-login {
+    width: 100%;
+    padding: 0.8rem;
+    font-size: 1rem;
+    font-weight: 500;
+    margin-top: 1rem;
+    background: linear-gradient(to right, #3498db, #2980b9);
+    border: none;
+    transition: transform 0.2s ease;
+}
+
+.btn-login:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+}
+
+.alert {
+    border-radius: 10px;
+    margin-bottom: 1rem;
+    background-color: rgba(255, 255, 255, 0.95);
+}
+
+.alert-danger {
+    background-color: rgba(255, 235, 235, 0.95);
+    border-color: #feb2b2;
+    color: #c53030;
+}
+
+.alert-success {
+    background-color: rgba(240, 255, 244, 0.95);
+    border-color: #9ae6b4;
+    color: #2f855a;
+}
+
+.container {
+    margin-top: -2rem;
+}
+
+@media (max-width: 576px) {
+    .login-container {
+        margin: 1rem;
+    }
+    
+    .login-card {
+        margin: 0 10px;
+    }
+
+    .navbar {
+        margin-top: 0.5rem;
+    }
+    
+    .navbar-brand {
+        font-size: 1.25rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block navbar %}
+<nav class="navbar navbar-expand-lg">
+    <div class="container">
+        <a class="navbar-brand" href="{{ url_for('main.index') }}">
+            <i class="fas fa-home"></i> 东莞房价查询系统
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('auth.register') }}">
+                        <i class="fas fa-user-plus"></i> 注册
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="login-container">
+        <div class="card login-card">
+            <div class="login-header">
+                <h2><i class="fas fa-user-circle"></i> 用户登录</h2>
+                <p>欢迎使用东莞房价查询系统</p>
+            </div>
+            
+            <div class="login-form">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
+                <form method="POST" action="{{ url_for('auth.login') }}">
+                    <div class="form-floating">
+                        <input type="text" class="form-control" id="username" name="username" placeholder="用户名" required>
+                        <label for="username">用户名</label>
+                    </div>
+                    <div class="form-floating">
+                        <input type="password" class="form-control" id="password" name="password" placeholder="密码" required>
+                        <label for="password">密码</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-login">
+                        <i class="fas fa-sign-in-alt"></i> 登录
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 自动隐藏警告消息
+document.addEventListener('DOMContentLoaded', function() {
+    var alerts = document.querySelectorAll('.alert');
+    alerts.forEach(function(alert) {
+        setTimeout(function() {
+            var bsAlert = new bootstrap.Alert(alert);
+            bsAlert.close();
+        }, 3000);
+    });
+
+    // 监听滚动事件，给导航栏添加背景色
+    window.addEventListener('scroll', function() {
+        var navbar = document.querySelector('.navbar');
+        if (window.scrollY > 50) {
+            navbar.style.background = 'rgba(52, 152, 219, 0.95) !important';
+            navbar.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.1)';
+        } else {
+            navbar.style.background = 'transparent !important';
+            navbar.style.boxShadow = 'none';
+        }
+    });
+});
+</script>
+{% endblock %} 

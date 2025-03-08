@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}房价列表 - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- 页面标题和搜索区域 -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0"><i class="fas fa-search"></i> 房源搜索</h4>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <!-- 第一行：主要搜索条件 -->
+                <div class="col-md-4">
+                    <label for="地区" class="form-label">区域</label>
+                    <select class="form-select" id="地区" name="地区">
+                        <option value="">全部区域</option>
+                        {% for district in districts %}
+                        <option value="{{ district }}" {% if request.args.get('地区') == district %}selected{% endif %}>
+                            {{ district }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="house_name" class="form-label">房屋名称</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-home"></i></span>
+                        <input type="text" class="form-control" id="house_name" name="房屋名称" 
+                               value="{{ request.args.get('房屋名称', '') }}" 
+                               placeholder="输入房屋名称搜索">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label for="户型" class="form-label">户型</label>
+                    <select class="form-select" id="户型" name="户型">
+                        <option value="">全部户型</option>
+                        <option value="1室" {% if request.args.get('户型') == '1室' %}selected{% endif %}>一室</option>
+                        <option value="2室" {% if request.args.get('户型') == '2室' %}selected{% endif %}>两室</option>
+                        <option value="3室" {% if request.args.get('户型') == '3室' %}selected{% endif %}>三室</option>
+                        <option value="4室" {% if request.args.get('户型') == '4室' %}selected{% endif %}>四室</option>
+                        <option value="5室及以上" {% if request.args.get('户型') == '5室及以上' %}selected{% endif %}>五室及以上</option>
+                    </select>
+                </div>
+
+                <!-- 第二行：价格和排序 -->
+                <div class="col-md-4">
+                    <label class="form-label">价格区间（元/㎡）</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control" id="price_min" name="price_min" 
+                               value="{{ request.args.get('price_min', '') }}" placeholder="最低价格">
+                        <span class="input-group-text">至</span>
+                        <input type="number" class="form-control" id="price_max" name="price_max" 
+                               value="{{ request.args.get('price_max', '') }}" placeholder="最高价格">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label for="sort_by" class="form-label">排序方式</label>
+                    <div class="input-group">
+                        <select class="form-select" id="sort_by" name="sort_by">
+                            <option value="价格" {% if request.args.get('sort_by') == '价格' %}selected{% endif %}>总价</option>
+                            <option value="面积" {% if request.args.get('sort_by') == '面积' %}selected{% endif %}>面积</option>
+                        </select>
+                        <select class="form-select" id="sort_order" name="sort_order">
+                            <option value="desc" {% if request.args.get('sort_order', 'desc') == 'desc' %}selected{% endif %}>从高到低</option>
+                            <option value="asc" {% if request.args.get('sort_order') == 'asc' %}selected{% endif %}>从低到高</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 搜索按钮 -->
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-search"></i> 搜索
+                    </button>
+                    <a href="{{ url_for('main.house_list') }}" class="btn btn-secondary">
+                        <i class="fas fa-redo"></i> 重置
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 数据表格 -->
+    <div class="card">
+        <div class="card-header bg-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-table"></i> 房源列表</h5>
+                <span class="text-muted">共找到 {{ pagination.total }} 条记录</span>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>区域</th>
+                            <th>标题</th>
+                            <th>房屋名称</th>
+                            <th>单价(元/㎡)</th>
+                            <th>总价(万元)</th>
+                            <th>户型</th>
+                            <th>面积(㎡)</th>
+                            <th>朝向</th>
+                            <th>装修情况</th>
+                            <th>所在楼层</th>
+                            <th>建筑类型</th>
+                            {% if current_user.is_admin() %}
+                            <th>操作</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for house in houses %}
+                        <tr>
+                            <td>{{ house.地区 }}</td>
+                            <td>{{ house.标题 }}</td>
+                            <td>{{ house.房屋名称 }}</td>
+                            <td>{{ "%.2f"|format(house.价格) }}</td>
+                            <td>{{ "%.2f"|format(house.价格 * house.面积 / 10000) }}</td>
+                            <td>{{ house.户型 }}</td>
+                            <td>{{ "%.2f"|format(house.面积) }}</td>
+                            <td>{{ house.朝向 }}</td>
+                            <td>{{ house.装修情况 }}</td>
+                            <td>{{ house.所在楼层 }}</td>
+                            <td>{{ house.建筑类型 }}</td>
+                            {% if current_user.is_admin() %}
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('admin.edit_house', house_id=house.id) }}" 
+                                       class="btn btn-outline-primary" title="编辑">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-danger" 
+                                            onclick="if(confirm('确定要删除这条记录吗？')) document.getElementById('delete-form-{{ house.id }}').submit();" 
+                                            title="删除">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                                <form id="delete-form-{{ house.id }}" 
+                                      action="{{ url_for('admin.delete_house', house_id=house.id) }}" 
+                                      method="POST" class="d-none">
+                                </form>
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 分页 -->
+            {% if pagination.pages > 1 %}
+            <div class="card-footer">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center mb-0">
+                        {% set args = request.args.copy() %}
+                        {% if pagination.has_prev %}
+                            {% set _ = args.pop('page', None) %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('main.house_list', page=pagination.prev_num, **args) }}">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">
+                                    <i class="fas fa-chevron-left"></i>
+                                </span>
+                            </li>
+                        {% endif %}
+
+                        {% for page in pagination.iter_pages() %}
+                            {% if page %}
+                                {% set args = request.args.copy() %}
+                                {% set _ = args.pop('page', None) %}
+                                <li class="page-item {% if page == pagination.page %}active{% endif %}">
+                                    <a class="page-link" href="{{ url_for('main.house_list', page=page, **args) }}">{{ page }}</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if pagination.has_next %}
+                            {% set args = request.args.copy() %}
+                            {% set _ = args.pop('page', None) %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('main.house_list', page=pagination.next_num, **args) }}">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">
+                                    <i class="fas fa-chevron-right"></i>
+                                </span>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

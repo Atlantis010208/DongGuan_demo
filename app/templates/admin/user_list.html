@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+
+{% block title %}用户管理 - {{ super() }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #0d6efd;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+.role-badge {
+    font-size: 0.875rem;
+}
+.table td {
+    vertical-align: middle;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- 页面标题 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fas fa-users-cog"></i> 用户管理</h2>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                    <i class="fas fa-user-plus"></i> 添加用户
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 搜索表单 -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" action="{{ url_for('admin.user_list') }}" class="row g-3 align-items-center">
+                <div class="col-auto">
+                    <label for="username" class="col-form-label">用户名</label>
+                </div>
+                <div class="col-auto">
+                    <input type="text" class="form-control" id="username" name="username" value="{{ username }}" placeholder="输入用户名搜索">
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-primary">搜索</button>
+                    <a href="{{ url_for('admin.user_list') }}" class="btn btn-secondary">重置</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 用户列表 -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>用户</th>
+                                    <th>邮箱</th>
+                                    <th>手机号</th>
+                                    <th>角色</th>
+                                    <th>注册时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="user-avatar me-2">
+                                                {{ user.username[0]|upper }}
+                                            </div>
+                                            <div>{{ user.username }}</div>
+                                        </div>
+                                    </td>
+                                    <td>{{ user.email }}</td>
+                                    <td>{{ user.phone }}</td>
+                                    <td>
+                                        <span class="badge {% if user.role_id == 1 %}bg-danger{% else %}bg-primary{% endif %} role-badge">
+                                            {{ '管理员' if user.role_id == 1 else '普通用户' }}
+                                        </span>
+                                    </td>
+                                    <td>{{ user.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <button type="button" class="btn btn-sm btn-primary" 
+                                                    onclick="editUser('{{ user.id }}', '{{ user.username }}', '{{ user.email }}', '{{ user.phone }}', '{{ user.role_id }}')">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            {% if user.id != current_user.id %}
+                                            <button type="button" class="btn btn-sm btn-danger" 
+                                                    onclick="deleteUser('{{ user.id }}', '{{ user.username }}')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 分页 -->
+                    {% if pagination and pagination.pages > 1 %}
+                    <nav aria-label="Page navigation" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                                <a class="page-link" href="{{ url_for('admin.user_list', page=pagination.prev_num, **request.args) if pagination.has_prev else '#' }}">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                            </li>
+                            {% for page in pagination.iter_pages() %}
+                                {% if page %}
+                                    <li class="page-item {% if page == pagination.page %}active{% endif %}">
+                                        <a class="page-link" href="{{ url_for('admin.user_list', page=page, **request.args) }}">{{ page }}</a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                                <a class="page-link" href="{{ url_for('admin.user_list', page=pagination.next_num, **request.args) if pagination.has_next else '#' }}">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 添加用户模态框 -->
+<div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-user-plus"></i> 添加用户</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addUserForm" method="POST" action="{{ url_for('admin.add_user') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">用户名</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">邮箱</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="phone" class="form-label">手机号</label>
+                        <input type="tel" class="form-control" id="phone" name="phone" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">密码</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="role_id" class="form-label">角色</label>
+                        <select class="form-select" id="role_id" name="role_id" required>
+                            <option value="2">普通用户</option>
+                            <option value="1">管理员</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">添加</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑用户模态框 -->
+<div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-user-edit"></i> 编辑用户</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editUserForm" method="POST">
+                <div class="modal-body">
+                    <input type="hidden" id="edit_user_id" name="user_id">
+                    <div class="mb-3">
+                        <label for="edit_username" class="form-label">用户名</label>
+                        <input type="text" class="form-control" id="edit_username" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_email" class="form-label">邮箱</label>
+                        <input type="email" class="form-control" id="edit_email" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_phone" class="form-label">手机号</label>
+                        <input type="tel" class="form-control" id="edit_phone" name="phone" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_password" class="form-label">新密码（可选）</label>
+                        <input type="password" class="form-control" id="edit_password" name="password">
+                        <div class="form-text">如果不需要修改密码，请留空</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_role_id" class="form-label">角色</label>
+                        <select class="form-select" id="edit_role_id" name="role_id" required>
+                            <option value="2">普通用户</option>
+                            <option value="1">管理员</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 编辑用户
+function editUser(id, username, email, phone, roleId) {
+    document.getElementById('edit_user_id').value = id;
+    document.getElementById('edit_username').value = username;
+    document.getElementById('edit_email').value = email;
+    document.getElementById('edit_phone').value = phone;
+    document.getElementById('edit_role_id').value = roleId;
+    
+    // 直接在JavaScript中构建URL
+    var baseUrl = "{{ url_for('admin.update_user', user_id=0) }}";
+    document.getElementById('editUserForm').action = baseUrl.replace('/0', '/' + id);
+    
+    new bootstrap.Modal(document.getElementById('editUserModal')).show();
+}
+
+// 删除用户
+function deleteUser(id, username) {
+    if (confirm(`确定要删除用户"${username}"吗？`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        // 直接在JavaScript中构建URL
+        var baseUrl = "{{ url_for('admin.delete_user', user_id=0) }}";
+        form.action = baseUrl.replace('/0', '/' + id);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// 手机号输入限制
+document.querySelectorAll('input[type="tel"]').forEach(function(input) {
+    input.addEventListener('input', function(e) {
+        this.value = this.value.replace(/[^\d]/g, '');
+        if (this.value.length > 11) {
+            this.value = this.value.slice(0, 11);
+        }
+    });
+});
+</script>
+{% endblock %} 

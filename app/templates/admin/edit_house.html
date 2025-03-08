@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}编辑房源 - {{ super() }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.form-label {
+    font-weight: 500;
+}
+.input-group-text {
+    min-width: 45px;
+    justify-content: center;
+}
+.form-floating > .form-control {
+    height: calc(3.5rem + 2px);
+    line-height: 1.25;
+}
+.change-history {
+    max-height: 200px;
+    overflow-y: auto;
+}
+.history-item {
+    font-size: 0.875rem;
+    padding: 0.5rem;
+    border-left: 3px solid #0d6efd;
+    margin-bottom: 0.5rem;
+    background-color: #f8f9fa;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-edit"></i> 编辑房源信息</h2>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="标题" class="form-label">标题</label>
+                                <input type="text" class="form-control" id="标题" name="标题" 
+                                       value="{{ house.标题 }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="房屋名称" class="form-label">房屋名称</label>
+                                <input type="text" class="form-control" id="房屋名称" name="房屋名称" 
+                                       value="{{ house.房屋名称 }}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="地区" class="form-label">地区</label>
+                                <input type="text" class="form-control" id="地区" name="地区" 
+                                       value="{{ house.地区 }}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="价格" class="form-label">单价(元/㎡)</label>
+                                <input type="number" class="form-control" id="价格" name="价格" 
+                                       value="{{ '%.2f'|format(house.价格) }}" step="0.01" min="0" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="面积" class="form-label">面积(㎡)</label>
+                                <input type="number" class="form-control" id="面积" name="面积" 
+                                       value="{{ '%.2f'|format(house.面积) }}" step="0.01" min="0" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="总价" class="form-label">总价(元)</label>
+                                <input type="text" class="form-control" id="总价" readonly 
+                                       value="{{ '%.2f'|format(house.价格 * house.面积) }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="户型" class="form-label">户型</label>
+                                <input type="text" class="form-control" id="户型" name="户型" 
+                                       value="{{ house.户型 }}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="朝向" class="form-label">朝向</label>
+                                <input type="text" class="form-control" id="朝向" name="朝向" 
+                                       value="{{ house.朝向 }}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="装修情况" class="form-label">装修情况</label>
+                                <input type="text" class="form-control" id="装修情况" name="装修情况" 
+                                       value="{{ house.装修情况 }}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="所在楼层" class="form-label">所在楼层</label>
+                                <input type="text" class="form-control" id="所在楼层" name="所在楼层" 
+                                       value="{{ house.所在楼层 }}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="建筑类型" class="form-label">建筑类型</label>
+                                <input type="text" class="form-control" id="建筑类型" name="建筑类型" 
+                                       value="{{ house.建筑类型 }}" required>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> 保存
+                            </button>
+                            <a href="{{ url_for('main.house_list') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> 取消
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 自动计算总价
+document.getElementById('价格').addEventListener('input', calculateTotalPrice);
+document.getElementById('面积').addEventListener('input', calculateTotalPrice);
+
+function calculateTotalPrice() {
+    const price = parseFloat(document.getElementById('价格').value) || 0;
+    const area = parseFloat(document.getElementById('面积').value) || 0;
+    
+    if (price > 0 && area > 0) {
+        const totalPrice = (price * area).toFixed(2);
+        document.getElementById('总价').value = totalPrice;
+    }
+}
+
+// 删除确认
+function deleteHouse() {
+    if (confirm('确定要删除这条房价数据吗？此操作不可恢复！')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = "{{ url_for('admin.delete_house', house_id=house.id) }}";
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// 表单验证
+document.querySelector('form').addEventListener('submit', function(e) {
+    const price = parseFloat(document.getElementById('价格').value);
+    const area = parseFloat(document.getElementById('面积').value);
+    
+    if (price <= 0) {
+        alert('单价必须大于0');
+        e.preventDefault();
+        return;
+    }
+    
+    if (area <= 0) {
+        alert('面积必须大于0');
+        e.preventDefault();
+        return;
+    }
+});
+</script>
+{% endblock %}
